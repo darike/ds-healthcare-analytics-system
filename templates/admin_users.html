@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+
+{% block title %}Admin - Access Configuration{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <h1>User Access Control</h1>
+    <p>Configure access parameters and create doctor accounts.</p>
+</div>
+
+<div class="card">
+    <h3>Create Doctor Account</h3>
+    <form method="POST" action="{{ url_for('admin_users') }}">
+        <div class="form-group">
+            <label for="new_username">Account Username</label>
+            <input type="text" id="new_username" name="new_username"
+                   placeholder="Enter registration identifier" required>
+        </div>
+
+        <div class="form-group">
+            <label for="new_password">Security Key (Password)</label>
+            <input type="password" id="new_password" name="new_password"
+                   placeholder="••••••••" required>
+        </div>
+
+        <div class="form-group">
+            <label for="assigned_role">System Domain Privilege Group</label>
+            <select id="assigned_role" name="assigned_role">
+                <option value="Doctor">Doctor</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="speciality">Speciality</label>
+            <input type="text" id="speciality" name="speciality"
+                   placeholder="e.g. Cardiologist, Diabetologist" required>
+        </div>
+
+        <button type="submit" class="submit-btn">Create Doctor</button>
+    </form>
+</div>
+
+{% endblock %}

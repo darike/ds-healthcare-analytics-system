@@ -1,0 +1,653 @@
+{% extends 'base.html' %}
+
+{% block title %}
+    {% if view == 'dashboard' or not view %}Doctor Dashboard
+    {% elif view == 'patients' %}Patients
+    {% elif view == 'appointments' %}Patient Appointments
+    {% elif view == 'notes' %}Clinical Notes
+    {% elif view == 'records' %}Medical Records
+    {% elif view == 'messages' %}Messages
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+
+{# ============================================================
+   DASHBOARD VIEW
+   ============================================================ #}
+{% if view == 'dashboard' or not view %}
+
+<div class="page-header">
+    <h1>Clinical Overview</h1>
+    <p>Live patient analytics powered by the machine learning engine.</p>
+</div>
+
+<div class="vitals-grid">
+    <div class="vital-card">
+        <div class="vital-icon vi-blue">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"
+                 stroke-linecap="round" stroke-linejoin="round">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                <circle cx="9" cy="7" r="4"/>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
+            </svg>
+        </div>
+        <div class="vital-body">
+            <span class="vital-label">Total Patients</span>
+            <div class="vital-value">{{ stats.total }}</div>
+        </div>
+    </div>
+    <div class="vital-card">
+        <div class="vital-icon vi-red">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"
+                 stroke-linecap="round" stroke-linejoin="round">
+                <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                <path d="M12 9v4M12 17h.01"/>
+            </svg>
+        </div>
+        <div class="vital-body">
+            <span class="vital-label">Critical Cases</span>
+            <div class="vital-value">{{ stats.critical }}</div>
+        </div>
+    </div>
+    <div class="vital-card">
+        <div class="vital-icon vi-orange">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="#fff">
+                <path d="M12 2s7 7.5 7 12a7 7 0 1 1-14 0c0-4.5 7-12 7-12z"/>
+            </svg>
+        </div>
+        <div class="vital-body">
+            <span class="vital-label">Diabetic Patients</span>
+            <div class="vital-value">{{ stats.diabetic }}</div>
+        </div>
+    </div>
+    <div class="vital-card">
+        <div class="vital-icon vi-pink">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="#fff">
+                <path d="M12 21s-8-5-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 6-8 11-8 11z"/>
+            </svg>
+        </div>
+        <div class="vital-body">
+            <span class="vital-label">Heart Disease</span>
+            <div class="vital-value">{{ stats.cvd }}</div>
+        </div>
+    </div>
+</div>
+
+<div class="dash-grid">
+
+    <div class="grid-card">
+        <div class="card-header"><h3>Patient Risk Distribution</h3></div>
+        <div class="donut-wrap">
+            <canvas id="riskChart"></canvas>
+        </div>
+        <div class="donut-legend">
+            <span><i class="dot dot-critical"></i> Critical ({{ stats.critical }})</span>
+            <span><i class="dot dot-moderate"></i> Moderate ({{ stats.moderate }})</span>
+            <span><i class="dot dot-stable"></i> Stable ({{ stats.stable }})</span>
+        </div>
+    </div>
+
+    <div class="grid-card">
+        <div class="card-header">
+            <h3>Priority Patients</h3>
+            <span class="card-tag">ML Ranked</span>
+        </div>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Patient</th>
+                    <th>Age</th>
+                    <th>Glucose</th>
+                    <th>Risk</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if patients %}
+                    {% for p in patients %}
+                    <tr>
+                        <td><strong style="color: var(--text-primary);">{{ p[0] }}</strong></td>
+                        <td>{{ p[1] if p[1] else '—' }}</td>
+                        <td>{{ p[4] }} mg/dL</td>
+                        <td><span class="appt-pill pill-{{ p[7]|lower if p[7] else 'stable' }}">{{ p[7] if p[7] else 'Stable' }}</span></td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="4" style="text-align:center; color: var(--text-secondary); padding:20px;">
+                            No patient data yet.
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+
+</div>
+
+<div class="grid-card upload-card">
+    <div class="card-header">
+        <h3>Patient Data Entry</h3>
+        <span class="card-tag">Manual Intake</span>
+    </div>
+    <p class="muted-line">Add patient accounts and enter their clinical data to run the risk prediction engine.</p>
+    <a href="{{ url_for('doctor_patients') }}"
+       class="submit-btn"
+       style="display:inline-block; text-align:center; text-decoration:none; max-width:240px;">
+        Go to Patients
+    </a>
+</div>
+
+
+{# ============================================================
+   PATIENTS VIEW
+   ============================================================ #}
+{% elif view == 'patients' %}
+
+<div class="page-header header-row">
+    <div>
+        <h1>Patients</h1>
+        <p>Manage patient accounts and record their clinical data.</p>
+    </div>
+    <button type="button" class="submit-btn add-patient-btn"
+            onclick="document.getElementById('addPatientModal').classList.add('open')">
+        + Add Patient
+    </button>
+</div>
+
+<div class="grid-card">
+    <div class="card-header">
+        <h3>Registered Patients</h3>
+        <span class="card-tag">{{ patients|length }} total</span>
+    </div>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Patient</th>
+                <th>Age</th>
+                <th>Clinical Data</th>
+                <th>Risk</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for p in patients %}
+            <tr>
+                {# Make only the data cells clickable, not the whole row,
+                   so the delete button doesn't accidentally navigate away #}
+         {% set record_url = url_for('doctor_patient_record', username=p.name) %}
+<td class="clickable-cell" onclick="window.location='{{ record_url }}'">
+    <strong style="color: var(--text-primary);">{{ p.name }}</strong>
+</td>
+<td class="clickable-cell" onclick="window.location='{{ record_url }}'">
+    {{ p.age if p.age is not none else '—' }}
+</td>
+<td class="clickable-cell" onclick="window.location='{{ record_url }}'">
+    {% if p.has_record %}
+        <span class="appt-pill pill-completed">Recorded</span>
+    {% else %}
+        <span class="appt-pill pill-cancelled">No data</span>
+    {% endif %}
+</td>
+<td class="clickable-cell" onclick="window.location='{{ record_url }}'">
+    {% if p.risk %}
+        <span class="appt-pill pill-{{ p.risk|lower }}">{{ p.risk }}</span>
+    {% else %}
+        —
+    {% endif %}
+</td>
+                <td style="text-align:right; white-space:nowrap;">
+                    {# Open link #}
+                    <a href="{{ url_for('doctor_patient_record', username=p.name) }}"
+                       style="color: var(--text-secondary); text-decoration:none; margin-right:12px;">
+                        Open ›
+                    </a>
+                    {# Delete button — opens a confirmation modal #}
+                    <button type="button"
+                            class="delete-patient-btn"
+                            data-name="{{ p.name }}"
+                            onclick="openDeleteModal('{{ p.name }}')">
+                        Delete
+                    </button>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="5" style="text-align:center; color: var(--text-secondary); padding:20px;">
+                    No patients yet. Click "+ Add Patient" to create one.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- ── Add Patient Modal ── -->
+<div class="modal-overlay" id="addPatientModal">
+    <div class="modal-box">
+        <div class="modal-head">
+            <h3>Add Patient</h3>
+            <button type="button" class="modal-close"
+                    onclick="document.getElementById('addPatientModal').classList.remove('open')">
+                &times;
+            </button>
+        </div>
+        <form method="POST" action="{{ url_for('doctor_patients') }}">
+            <div class="form-group">
+                <label for="new_username">Patient Name</label>
+                <input type="text" id="new_username" name="new_username"
+                       placeholder="Enter patient username" required>
+            </div>
+            <div class="form-group">
+                <label for="new_password">Password</label>
+                <input type="password" id="new_password" name="new_password"
+                       placeholder="••••••••" required>
+            </div>
+            <button type="submit" class="submit-btn">Create Patient</button>
+        </form>
+    </div>
+</div>
+
+<!-- ── Delete Confirmation Modal ── -->
+<div class="modal-overlay" id="deletePatientModal">
+    <div class="modal-box">
+        <div class="modal-head">
+            <h3>Delete Patient</h3>
+            <button type="button" class="modal-close"
+                    onclick="document.getElementById('deletePatientModal').classList.remove('open')">
+                &times;
+            </button>
+        </div>
+        <p style="color: var(--text-secondary); margin: 0 0 20px;">
+            Are you sure you want to permanently delete
+            <strong id="deletePatientName" style="color: var(--text-primary);"></strong>?
+            This will remove their login account and all clinical data. This cannot be undone.
+        </p>
+        <form method="POST" action="{{ url_for('doctor_delete_patient') }}" id="deletePatientForm">
+            <input type="hidden" name="username" id="deletePatientInput">
+            <div style="display:flex; gap:12px;">
+                <button type="submit" class="submit-btn"
+                        style="background: #e0445b; max-width:160px;">
+                    Yes, Delete
+                </button>
+                <button type="button"
+                        onclick="document.getElementById('deletePatientModal').classList.remove('open')"
+                        style="background:none; border:1px solid var(--border); color:var(--text-secondary);
+                               padding:10px 20px; border-radius:8px; cursor:pointer; font-size:0.9rem;">
+                    Cancel
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+
+{# ============================================================
+   APPOINTMENTS VIEW
+   ============================================================ #}
+{% elif view == 'appointments' %}
+
+<div class="page-header">
+    <h1>Patient Appointments</h1>
+    <p>All appointments that patients have booked with you.</p>
+</div>
+
+<div class="appt-stats">
+    <div class="appt-stat-tile">
+        <span class="appt-stat-label">Total</span>
+        <span class="appt-stat-value">{{ appointments|length }}</span>
+    </div>
+    <div class="appt-stat-tile">
+        <span class="appt-stat-label">Booked</span>
+        <span class="appt-stat-value">
+            {% set booked_count = 0 %}
+            {% for appt in appointments %}
+                {% if appt[5] == 'Booked' %}{% set booked_count = booked_count + 1 %}{% endif %}
+            {% endfor %}
+            {{ booked_count }}
+        </span>
+    </div>
+    <div class="appt-stat-tile">
+        <span class="appt-stat-label">Cancelled</span>
+        <span class="appt-stat-value">
+            {% set cancelled_count = 0 %}
+            {% for appt in appointments %}
+                {% if appt[5] == 'Cancelled' %}{% set cancelled_count = cancelled_count + 1 %}{% endif %}
+            {% endfor %}
+            {{ cancelled_count }}
+        </span>
+    </div>
+</div>
+
+<div class="table-container">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Patient</th>
+                <th>Date</th>
+                <th>Time</th>
+                <th>Reason</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% if appointments %}
+                {% for appt in appointments %}
+                <tr>
+                    <td><strong style="color: var(--text-primary);">{{ appt[1] }}</strong></td>
+                    <td>{{ appt[2] }}</td>
+                    <td>{{ appt[3] }}</td>
+                    <td>{{ appt[4] }}</td>
+                    <td><span class="appt-pill pill-{{ appt[5]|lower }}">{{ appt[5] }}</span></td>
+                </tr>
+                {% endfor %}
+            {% else %}
+                <tr>
+                    <td colspan="5" style="text-align:center; padding:30px;">No appointments booked yet.</td>
+                </tr>
+            {% endif %}
+        </tbody>
+    </table>
+</div>
+
+
+{# ============================================================
+   CLINICAL NOTES VIEW
+   ============================================================ #}
+{% elif view == 'notes' %}
+
+<div class="page-header">
+    <h1>Clinical Notes</h1>
+    <p>Select a patient to add and review their clinical notes.</p>
+</div>
+
+{% if not selected %}
+<div class="grid-card">
+    <div class="card-header">
+        <h3>Select Patient</h3>
+        <span class="card-tag">{{ patients|length }} total</span>
+    </div>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Patient</th>
+                <th>Age</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for p in patients %}
+            <tr class="clickable-row"
+                data-href="{{ url_for('doctor_notes', patient=p[0]) }}">
+                <td><strong style="color: var(--text-primary);">{{ p[0] }}</strong></td>
+                <td>{{ p[1] if p[1] else '—' }}</td>
+                <td style="text-align:right; color: var(--text-secondary);">Add Note ›</td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="3" style="text-align:center; color: var(--text-secondary); padding:20px;">
+                    No patients yet.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% else %}
+
+<div class="page-header" style="margin-top:0;">
+    <a href="{{ url_for('doctor_notes') }}" class="back-link">← Back to patients</a>
+</div>
+
+<div class="dash-grid">
+    <div class="grid-card">
+        <div class="card-header"><h3>Add Note for {{ selected }}</h3></div>
+        <form method="POST" action="{{ url_for('doctor_notes') }}">
+            <input type="hidden" name="patient" value="{{ selected }}">
+            <div class="form-group">
+                <label for="note">Clinical Note</label>
+                <textarea id="note" name="note" rows="5"
+                          placeholder="Write your note here..." required></textarea>
+            </div>
+            <button type="submit" class="submit-btn">Save Note</button>
+        </form>
+    </div>
+    <div class="grid-card">
+        <div class="card-header"><h3>Previous Notes</h3></div>
+        {% if notes %}
+            {% for n in notes %}
+            <div class="note-item">
+                <p>{{ n.note }}</p>
+                <span class="note-time">{{ n.created_at }}</span>
+            </div>
+            {% endfor %}
+        {% else %}
+            <p class="muted-line">No notes for this patient yet.</p>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+
+{# ============================================================
+   MEDICAL RECORDS VIEW
+   ============================================================ #}
+{% elif view == 'records' %}
+
+<div class="page-header">
+    <h1>Medical Records</h1>
+    <p>Select a patient to upload and review their medical documents.</p>
+</div>
+
+{% if not selected %}
+<div class="grid-card">
+    <div class="card-header">
+        <h3>Select Patient</h3>
+        <span class="card-tag">{{ patients|length }} total</span>
+    </div>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Patient</th>
+                <th>Age</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for p in patients %}
+            <tr class="clickable-row"
+                data-href="{{ url_for('doctor_records', patient=p[0]) }}">
+                <td><strong style="color: var(--text-primary);">{{ p[0] }}</strong></td>
+                <td>{{ p[1] if p[1] else '—' }}</td>
+                <td style="text-align:right; color: var(--text-secondary);">View Records ›</td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="3" style="text-align:center; color: var(--text-secondary); padding:20px;">
+                    No patients yet.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% else %}
+
+<div style="margin-bottom:16px;">
+    <a href="{{ url_for('doctor_records') }}" class="back-link">← Back to patients</a>
+</div>
+
+<div class="dash-grid">
+    <div class="grid-card">
+        <div class="card-header"><h3>Upload Record for {{ selected }}</h3></div>
+        <form method="POST" action="{{ url_for('doctor_records') }}" enctype="multipart/form-data">
+            <input type="hidden" name="patient" value="{{ selected }}">
+            <div class="form-group">
+                <label for="document_type">Document Type</label>
+                <select id="document_type" name="document_type" required>
+                    <option value="Lab Report">Lab Report</option>
+                    <option value="Prescription">Prescription</option>
+                    <option value="Diagnostic Report">Diagnostic Report</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="document">Document File</label>
+                <input type="file" id="document" name="document" required>
+            </div>
+            <button type="submit" class="submit-btn">Upload Record</button>
+        </form>
+    </div>
+    <div class="grid-card">
+        <div class="card-header"><h3>Records for {{ selected }}</h3></div>
+        {% if records %}
+            <table class="data-table">
+                <thead>
+                    <tr><th>Type</th><th>File</th><th>Uploaded By</th></tr>
+                </thead>
+                <tbody>
+                    {% for r in records %}
+                    <tr>
+                        <td><span class="appt-pill pill-booked">{{ r.document_type }}</span></td>
+                        <td>
+                            <a href="{{ url_for('download_file', filename=r.file_name) }}"
+                               target="_blank" class="file-link">{{ r.file_name }}</a>
+                        </td>
+                        <td>{{ r.uploaded_by }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p class="muted-line">No records for this patient yet.</p>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+
+{# ============================================================
+   MESSAGES VIEW
+   ============================================================ #}
+{% elif view == 'messages' %}
+
+<div class="page-header">
+    <h1>Messages</h1>
+    <p>Select a patient to read their queries and reply.</p>
+</div>
+
+{% if not selected %}
+<div class="grid-card">
+    <div class="card-header">
+        <h3>Select Patient</h3>
+        <span class="card-tag">{{ patients|length }} total</span>
+    </div>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Patient</th>
+                <th>Age</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for p in patients %}
+            <tr class="clickable-row"
+                data-href="{{ url_for('doctor_messages', patient=p[0]) }}">
+                <td><strong style="color: var(--text-primary);">{{ p[0] }}</strong></td>
+                <td>{{ p[1] if p[1] else '—' }}</td>
+                <td style="text-align:right; color: var(--text-secondary);">Open Chat ›</td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="3" style="text-align:center; color: var(--text-secondary); padding:20px;">
+                    No patients yet.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% else %}
+
+<div style="margin-bottom:16px;">
+    <a href="{{ url_for('doctor_messages') }}" class="back-link">← Back to patients</a>
+</div>
+
+<div class="grid-card chat-card">
+    <div class="card-header"><h3>Chat with {{ selected }}</h3></div>
+    <div class="chat-window">
+        {% if chat %}
+            {% for msg in chat %}
+            <div class="chat-row {% if msg.sender == 'Doctor' %}me{% else %}them{% endif %}">
+                <div class="chat-bubble">
+                    <span class="chat-sender">{{ msg.sender }}</span>
+                    <p>{{ msg.message }}</p>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <p class="muted-line">No messages yet with this patient.</p>
+        {% endif %}
+    </div>
+    <form method="POST" action="{{ url_for('doctor_messages') }}" class="chat-input">
+        <input type="hidden" name="patient" value="{{ selected }}">
+        <input type="text" name="message" placeholder="Type your reply..." required>
+        <button type="submit" class="submit-btn">Send</button>
+    </form>
+</div>
+{% endif %}
+
+{% endif %}
+{# end of view blocks #}
+
+{% endblock %}
+
+
+{% block scripts %}
+<script>
+    // Clickable rows (notes / records / messages patient lists)
+    document.querySelectorAll('tr[data-href]').forEach(function(row) {
+        row.addEventListener('click', function() {
+            window.location = row.getAttribute('data-href');
+        });
+    });
+
+    // Delete confirmation modal
+    function openDeleteModal(name) {
+        document.getElementById('deletePatientName').textContent  = name;
+        document.getElementById('deletePatientInput').value       = name;
+        document.getElementById('deletePatientModal').classList.add('open');
+    }
+</script>
+{% if view == 'dashboard' or not view %}
+<script src="{{ url_for('static', filename='js/chart.min.js') }}"></script>
+<script>
+    var critical = parseInt("{{ stats.critical or 0 }}");
+    var moderate = parseInt("{{ stats.moderate or 0 }}");
+    var stable   = parseInt("{{ stats.stable or 0 }}");
+
+    new Chart(document.getElementById('riskChart'), {
+        type: 'doughnut',
+        data: {
+            labels: ['Critical', 'Moderate', 'Stable'],
+            datasets: [{
+                data: [critical, moderate, stable],
+                backgroundColor: ['#e0445b', '#f5a623', '#12a150'],
+                borderWidth: 0,
+                hoverOffset: 6
+            }]
+        },
+        options: {
+            cutout: '68%',
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } }
+        }
+    });
+</script>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+
+{% block title %}Admin - Infrastructure Overview{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <h1>System Statistics</h1>
+    <p>Database registration metrics compiled from the active T-SQL schema tables.</p>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <span class="stat-label">Registered Medical Staff (Doctors)</span>
+        <div class="stat-value">{{ stats['Doctor'] }}</div>
+    </div>
+    <div class="stat-card">
+        <span class="stat-label">Registered Patient Profiles</span>
+        <div class="stat-value">{{ stats['Patient'] }}</div>
+    </div>
+</div>
+
+{% endblock %}
