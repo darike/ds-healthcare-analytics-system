@@ -1,0 +1,262 @@
+{% extends 'base.html' %}
+
+{% block title %}Analytics{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <h1>Analytics</h1>
+    <p>
+        {% if role == 'Admin' %}
+            System-wide patient analytics across all doctors.
+        {% else %}
+            Patient analytics for your registered patients.
+        {% endif %}
+    </p>
+</div>
+
+{% if total == 0 %}
+<div class="grid-card" style="text-align:center; padding: 60px 20px;">
+    <p style="color: var(--text-secondary); font-size: 1rem;">No patient data available yet.</p>
+</div>
+{% else %}
+
+<!-- ── Row 1: Summary Stats ── -->
+<div class="vitals-grid" style="grid-template-columns: repeat(4, 1fr);">
+    <div class="vital-card">
+        <div class="vital-icon vi-blue">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
+            </svg>
+        </div>
+        <div class="vital-body">
+            <span class="vital-label">Total Patients</span>
+            <div class="vital-value">{{ total }}</div>
+        </div>
+    </div>
+    <div class="vital-card">
+        <div class="vital-icon vi-orange">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="#fff">
+                <path d="M12 2s7 7.5 7 12a7 7 0 1 1-14 0c0-4.5 7-12 7-12z"/>
+            </svg>
+        </div>
+        <div class="vital-body">
+            <span class="vital-label">Diabetic</span>
+            <div class="vital-value">{{ diabetic }}</div>
+        </div>
+    </div>
+    <div class="vital-card">
+        <div class="vital-icon vi-pink">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="#fff">
+                <path d="M12 21s-8-5-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 6-8 11-8 11z"/>
+            </svg>
+        </div>
+        <div class="vital-body">
+            <span class="vital-label">Heart Disease</span>
+            <div class="vital-value">{{ cvd }}</div>
+        </div>
+    </div>
+    <div class="vital-card">
+        <div class="vital-icon vi-red">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                <path d="M12 9v4M12 17h.01"/>
+            </svg>
+        </div>
+        <div class="vital-body">
+            <span class="vital-label">Critical Cases</span>
+            <div class="vital-value">{{ critical }}</div>
+        </div>
+    </div>
+</div>
+
+<!-- ── Row 2: Risk Donut + Disease Bar ── -->
+<div class="dash-grid">
+
+    <div class="grid-card">
+        <div class="card-header"><h3>Risk Distribution</h3></div>
+        <div class="donut-wrap">
+            <canvas id="riskChart"></canvas>
+        </div>
+        <div class="donut-legend">
+            <span><i class="dot dot-critical"></i> Critical ({{ critical }})</span>
+            <span><i class="dot dot-moderate"></i> Moderate ({{ moderate }})</span>
+            <span><i class="dot dot-stable"></i> Stable ({{ stable }})</span>
+        </div>
+    </div>
+
+    <div class="grid-card">
+        <div class="card-header"><h3>Disease Distribution</h3></div>
+        <div style="position:relative; height:260px;">
+            <canvas id="diseaseChart"></canvas>
+        </div>
+    </div>
+
+</div>
+
+<!-- ── Row 3: Age by Risk Bar ── -->
+<div class="grid-card">
+    <div class="card-header"><h3>Age Group by Health Risk</h3></div>
+    <div style="position:relative; height:280px;">
+        <canvas id="ageRiskChart"></canvas>
+    </div>
+</div>
+
+<!-- ── Row 4: Smoking vs CVD ── -->
+<div class="grid-card">
+    <div class="card-header"><h3>Smoking Status vs Cardiovascular Disease</h3></div>
+    <div style="position:relative; height:260px;">
+        <canvas id="smokingCvdChart"></canvas>
+    </div>
+</div>
+
+{% endif %}
+<div id="chart-data"
+    data-critical="{{ critical }}"
+    data-moderate="{{ moderate }}"
+    data-stable="{{ stable }}"
+    data-diabetes-only="{{ disease_data.diabetes_only }}"
+    data-cvd-only="{{ disease_data.cvd_only }}"
+    data-both="{{ disease_data.both }}"
+    data-healthy="{{ disease_data.healthy }}"
+    data-age-labels="{{ age_risk_data.labels | join(',') }}"
+    data-age-stable="{{ age_risk_data.stable | join(',') }}"
+    data-age-moderate="{{ age_risk_data.moderate | join(',') }}"
+    data-age-critical="{{ age_risk_data.critical | join(',') }}"
+    data-smoke-labels="{{ smoking_data.labels | join(',') }}"
+    data-smoke-yes="{{ smoking_data.cvd_yes | join(',') }}"
+    data-smoke-no="{{ smoking_data.cvd_no | join(',') }}"
+    style="display:none;">
+</div>
+{% endblock %}
+
+
+{% block scripts %}
+{% if total > 0 %}
+<script src="{{ url_for('static', filename='js/chart.min.js') }}"></script>
+<script>
+    // ── Data from Flask ──
+    var cd = document.getElementById('chart-data').dataset;
+
+var riskData = {
+    Critical: +cd.critical,
+    Moderate: +cd.moderate,
+    Stable:   +cd.stable
+};
+
+var diseaseData = {
+    diabetes_only: +cd.diabetesOnly,
+    cvd_only:      +cd.cvdOnly,
+    both:          +cd.both,
+    healthy:       +cd.healthy
+};
+
+var ageRiskData = {
+    labels:   cd.ageLabels.split(','),
+    stable:   cd.ageStable.split(',').map(Number),
+    moderate: cd.ageModerate.split(',').map(Number),
+    critical: cd.ageCritical.split(',').map(Number)
+};
+
+var smokingData = {
+    labels:  cd.smokeLabels.split(','),
+    cvd_yes: cd.smokeYes.split(',').map(Number),
+    cvd_no:  cd.smokeNo.split(',').map(Number)
+};
+    var RISK_COLORS = {
+        'Critical': '#e0445b',
+        'Moderate': '#f5a623',
+        'Stable':   '#12a150'
+    };
+
+    // ── 1. Risk Donut ──
+    new Chart(document.getElementById('riskChart'), {
+        type: 'doughnut',
+        data: {
+            labels: ['Critical', 'Moderate', 'Stable'],
+            datasets: [{
+                data: [riskData.Critical, riskData.Moderate, riskData.Stable],
+                backgroundColor: ['#e0445b', '#f5a623', '#12a150'],
+                borderWidth: 0,
+                hoverOffset: 6
+            }]
+        },
+        options: {
+            cutout: '68%',
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } }
+        }
+    });
+
+    // ── 2. Disease Distribution Bar ──
+    new Chart(document.getElementById('diseaseChart'), {
+        type: 'bar',
+        data: {
+            labels: ['Diabetes Only', 'CVD Only', 'Both', 'Healthy'],
+            datasets: [{
+                data: [diseaseData.diabetes_only, diseaseData.cvd_only,
+                       diseaseData.both, diseaseData.healthy],
+                backgroundColor: ['#FF6B6B', '#4DA6FF', '#A855F7', '#2DD4BF'],
+                borderRadius: 6,
+                borderSkipped: false
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { beginAtZero: true, ticks: { stepSize: 1 } },
+                x: { grid: { display: false } }
+            }
+        }
+    });
+
+    // ── 3. Age by Risk Grouped Bar ──
+    var ageLabels   = ageRiskData.labels;
+    var ageDatasets = [
+        { label: 'Stable',   data: ageRiskData.stable,   backgroundColor: '#12a150', borderRadius: 4 },
+        { label: 'Moderate', data: ageRiskData.moderate, backgroundColor: '#f5a623', borderRadius: 4 },
+        { label: 'Critical', data: ageRiskData.critical, backgroundColor: '#e0445b', borderRadius: 4 },
+    ];
+    new Chart(document.getElementById('ageRiskChart'), {
+        type: 'bar',
+        data: { labels: ageLabels, datasets: ageDatasets },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { position: 'top' } },
+            scales: {
+                y: { beginAtZero: true, ticks: { stepSize: 1 } },
+                x: { grid: { display: false } }
+            }
+        }
+    });
+
+    // ── 4. Smoking vs CVD Grouped Bar ──
+    new Chart(document.getElementById('smokingCvdChart'), {
+        type: 'bar',
+        data: {
+            labels: smokingData.labels,
+            datasets: [
+                { label: 'CVD: Yes', data: smokingData.cvd_yes, backgroundColor: '#FF6B6B', borderRadius: 4 },
+                { label: 'CVD: No',  data: smokingData.cvd_no,  backgroundColor: '#2DD4BF', borderRadius: 4 },
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { position: 'top' } },
+            scales: {
+                y: { beginAtZero: true, ticks: { stepSize: 1 } },
+                x: { grid: { display: false } }
+            }
+        }
+    });
+
+
+</script>
+{% endif %}
+{% endblock %}

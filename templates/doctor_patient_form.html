@@ -1,0 +1,256 @@
+{% extends 'base.html' %}
+
+{% block title %}Patient Record – {{ patient_name }}{% endblock %}
+
+{% block content %}
+
+<div class="page-header header-row" style="margin-bottom: 24px;">
+    <div>
+        <a href="{{ url_for('doctor_patients') }}" class="back-link">← Back to Patients</a>
+        <h1 style="margin-top: 8px;">{{ patient_name }}</h1>
+        <p>Enter or update clinical data to run CVD, Diabetes & Health Risk predictions.</p>
+    </div>
+    {% if record and record.risk %}
+    <span class="appt-pill pill-{{ record.risk|lower }}" style="height: fit-content; font-size: 0.85rem; padding: 6px 14px;">
+        {{ record.risk }} Risk
+    </span>
+    {% endif %}
+</div>
+
+<form method="POST" action="{{ url_for('doctor_patient_record', username=patient_name) }}">
+    <input type="hidden" name="username" value="{{ patient_name }}">
+
+    <div class="dash-grid">
+
+        <!-- ── Demographics ── -->
+        <div class="grid-card">
+            <div class="card-header">
+                <h3>Demographics</h3>
+                <span class="card-tag">Basic Info</span>
+            </div>
+
+            <div class="form-group">
+                <label for="Age">Age</label>
+                <input type="number" id="Age" name="Age" min="1" max="120"
+                       placeholder="e.g. 45"
+                       value="{{ record.Age if record and record.Age is not none else '' }}">
+            </div>
+
+            <div class="form-group">
+                <label for="Gender">Gender</label>
+                <select id="Gender" name="Gender">
+                    <option value="">— Select —</option>
+                    <option value="Male"   {% if record and record.Gender == 'Male'   %}selected{% endif %}>Male</option>
+                    <option value="Female" {% if record and record.Gender == 'Female' %}selected{% endif %}>Female</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="Smoking_status">Smoking Status</label>
+                <select id="Smoking_status" name="Smoking_status">
+                    <option value="">— Select —</option>
+                    <option value="Non-Smoker"          {% if record and record.Smoking_status == 'Non-Smoker'          %}selected{% endif %}>Non-Smoker</option>
+                    <option value="Smoker"         {% if record and record.Smoking_status == 'Smoker'         %}selected{% endif %}>Smoker</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="Sleep_hours_per_day">Sleep Hours per Day</label>
+                <input type="number" step="0.5" id="Sleep_hours_per_day" name="Sleep_hours_per_day"
+                       min="0" max="24" placeholder="e.g. 7"
+                       value="{{ record.Sleep_hours_per_day if record and record.Sleep_hours_per_day is not none else '' }}">
+            </div>
+
+            <div class="form-group">
+    <label for="Stress_level">Stress Level</label>
+    <select id="Stress_level" name="Stress_level">
+        <option value="">— Select —</option>
+
+        <option value="Low"
+            {% if record and record.Stress_level == 'Low' %}selected{% endif %}>
+            Low
+        </option>
+
+        <option value="Medium"
+            {% if record and record.Stress_level == 'Medium' %}selected{% endif %}>
+            Medium
+        </option>
+
+        <option value="High"
+            {% if record and record.Stress_level == 'High' %}selected{% endif %}>
+            High
+        </option>
+
+    </select>
+</div>
+        </div>
+
+        <!-- ── Vitals ── -->
+        <div class="grid-card">
+            <div class="card-header">
+                <h3>Vitals</h3>
+                <span class="card-tag">Measurements</span>
+            </div>
+
+            <div class="form-group">
+                <label for="Blood_pressure_systolic">Blood Pressure – Systolic (mmHg)</label>
+                <input type="number" id="Blood_pressure_systolic" name="Blood_pressure_systolic"
+                       placeholder="e.g. 120"
+                       value="{{ record.Blood_pressure_systolic if record and record.Blood_pressure_systolic is not none else '' }}">
+            </div>
+
+            <div class="form-group">
+                <label for="Blood_pressure_diastolic">Blood Pressure – Diastolic (mmHg)</label>
+                <input type="number" id="Blood_pressure_diastolic" name="Blood_pressure_diastolic"
+                       placeholder="e.g. 80"
+                       value="{{ record.Blood_pressure_diastolic if record and record.Blood_pressure_diastolic is not none else '' }}">
+            </div>
+
+            <div class="form-group">
+                <label for="Heart_rate">Heart Rate (bpm)</label>
+                <input type="number" id="Heart_rate" name="Heart_rate"
+                       placeholder="e.g. 72"
+                       value="{{ record.Heart_rate if record and record.Heart_rate is not none else '' }}">
+            </div>
+
+            <div class="form-group">
+                <label for="Body_temperature">Body Temperature (°C)</label>
+                <input type="number" step="0.1" id="Body_temperature" name="Body_temperature"
+                       placeholder="e.g. 37.0"
+                       value="{{ record.Body_temperature if record and record.Body_temperature is not none else '' }}">
+            </div>
+        </div>
+
+        <!-- ── Lab Results ── -->
+        <div class="grid-card">
+            <div class="card-header">
+                <h3>Lab Results</h3>
+                <span class="card-tag">Blood Work</span>
+            </div>
+
+            <div class="form-group">
+                <label for="Fasting_blood_glucose">Fasting Blood Glucose (mg/dL)</label>
+                <input type="number" step="0.1" id="Fasting_blood_glucose" name="Fasting_blood_glucose"
+                       placeholder="e.g. 95"
+                       value="{{ record.Fasting_blood_glucose if record and record.Fasting_blood_glucose is not none else '' }}">
+            </div>
+
+            <div class="form-group">
+                <label for="Cholesterol_level">Cholesterol Level (mg/dL)</label>
+                <input type="number" step="0.1" id="Cholesterol_level" name="Cholesterol_level"
+                       placeholder="e.g. 190"
+                       value="{{ record.Cholesterol_level if record and record.Cholesterol_level is not none else '' }}">
+            </div>
+
+            <div class="form-group">
+                <label for="Insulin_level">Insulin Level (µIU/mL)</label>
+                <input type="number" step="0.1" id="Insulin_level" name="Insulin_level"
+                       placeholder="e.g. 10"
+                       value="{{ record.Insulin_level if record and record.Insulin_level is not none else '' }}">
+            </div>
+        </div>
+
+        <!-- ── Family & Medical History ── -->
+<!-- ── Family & Medical History ── -->
+<div class="grid-card">
+    <div class="card-header">
+        <h3>History</h3>
+        <span class="card-tag">Family & Medical</span>
+    </div>
+
+    <div class="form-group">
+        <label for="Family_History_Diabetes">Family History of Diabetes</label>
+        <select id="Family_History_Diabetes" name="Family_History_Diabetes">
+            <option value="">— Select —</option>
+            <option value="Yes" {% if record and record.Family_History_Diabetes == 1 %}selected{% endif %}>Yes</option>
+            <option value="No"  {% if record and record.Family_History_Diabetes == 0 %}selected{% endif %}>No</option>
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label for="Family_history_Heart_disease">Family History of Heart Disease</label>
+        <select id="Family_history_Heart_disease" name="Family_history_Heart_disease">
+            <option value="">— Select —</option>
+            <option value="Yes" {% if record and record.Family_history_Heart_disease == 1 %}selected{% endif %}>Yes</option>
+            <option value="No"  {% if record and record.Family_history_Heart_disease == 0 %}selected{% endif %}>No</option>
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label for="Previous_heart_condition">Previous Heart Condition</label>
+        <select id="Previous_heart_condition" name="Previous_heart_condition">
+            <option value="">— Select —</option>
+            <option value="Yes" {% if record and record.Previous_heart_condition == 1 %}selected{% endif %}>Yes</option>
+            <option value="No"  {% if record and record.Previous_heart_condition == 0 %}selected{% endif %}>No</option>
+        </select>
+    </div>
+
+</div>
+
+    </div><!-- /.dash-grid -->
+
+    <!-- ── Prediction Results (shown only if record already exists) ── -->
+    {% if record and (record.cvd_diagnosis is not none or record.diabetes_diagnosis is not none or record.health_risk is not none) %}
+    <div class="grid-card" style="margin-top: 4px;">
+        <div class="card-header">
+            <h3>Last Prediction Results</h3>
+            <span class="card-tag">ML Output</span>
+        </div>
+        <div style="display: flex; gap: 24px; flex-wrap: wrap; padding: 4px 0 8px;">
+            <div>
+                <span class="vital-label">CVD Diagnosis</span>
+                <div style="margin-top: 6px;">
+                    {% if record.cvd_diagnosis == 1 %}
+                        <span class="appt-pill pill-critical">Positive</span>
+                    {% elif record.cvd_diagnosis == 0 %}
+                        <span class="appt-pill pill-stable">Negative</span>
+                    {% else %}
+                        <span class="appt-pill">—</span>
+                    {% endif %}
+                </div>
+            </div>
+            <div>
+                <span class="vital-label">Diabetes Diagnosis</span>
+                <div style="margin-top: 6px;">
+                    {% if record.diabetes_diagnosis == 1 %}
+                        <span class="appt-pill pill-critical">Positive</span>
+                    {% elif record.diabetes_diagnosis == 0 %}
+                        <span class="appt-pill pill-stable">Negative</span>
+                    {% else %}
+                        <span class="appt-pill">—</span>
+                    {% endif %}
+                </div>
+            </div>
+            <div>
+                <span class="vital-label">Overall Health Risk</span>
+                <div style="margin-top: 6px;">
+                    {% if record.health_risk %}
+                        <span class="appt-pill pill-{{ record.health_risk|lower }}">{{ record.health_risk }}</span>
+                    {% else %}
+                        <span class="appt-pill">—</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- ── Save ── -->
+    <div class="grid-card" style="margin-top: 4px;">
+        <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+            <button type="submit" class="submit-btn" style="max-width: 240px;">
+                Save &amp; Run Predictions
+            </button>
+            <a href="{{ url_for('doctor_patients') }}"
+               style="color: var(--text-secondary); text-decoration: none; font-size: 0.9rem;">
+                Cancel
+            </a>
+        </div>
+        <p class="muted-line" style="margin-top: 12px; font-size: 0.82rem;">
+            The ML engine will predict CVD diagnosis, Diabetes diagnosis, and overall Health Risk immediately after saving.
+        </p>
+    </div>
+
+</form>
+
+{% endblock %}

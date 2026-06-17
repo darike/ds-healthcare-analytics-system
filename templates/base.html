@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{% endblock %} - Healthcare Analytics</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=2.7">
+    {% block head %}{% endblock %}
+</head>
+<body>
+
+    <div class="dashboard-wrapper">
+
+        <nav class="sidebar">
+            <div class="sidebar-top">
+                <div class="brand">
+                    <div class="brand-logo">
+                        <svg width="38" height="38" viewBox="0 0 38 38" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <rect width="38" height="38" rx="11" fill="#5b5fe0"/>
+                            <path d="M8 20h4l2.5-7 4 13 3-9 2 3h6" stroke="#ffffff" stroke-width="2.2"
+                                  stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        <div class="brand-text">
+                            <h2>HealthCare</h2>
+                            <p>{{ session.get('user_role') }} Panel</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="side-user">
+                    <div class="side-avatar">{{ (user_name or 'U')[0]|upper }}</div>
+                    <div class="side-user-info">
+                        <span class="side-user-name">{{ user_name }}</span>
+                        <span class="side-user-role">{{ session.get('user_role') }}</span>
+                    </div>
+                </div>
+
+                <ul class="nav-menu">
+                    {% if session.get('user_role') == 'Admin' %}
+                        <li>
+                            <a href="{{ url_for('admin_dashboard') }}"
+                               class="nav-item {% if active_page == 'overview' %}active{% endif %}">
+                                Overview
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{{ url_for('admin_users') }}"
+                               class="nav-item {% if active_page == 'users' %}active{% endif %}">
+                                User Management
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{{ url_for('admin_analytics') }}"
+                               class="nav-item {% if active_page == 'admin_analytics' %}active{% endif %}">
+                                Analytics
+                            </a>
+                        </li>
+
+                    {% elif session.get('user_role') == 'Doctor' %}
+                        <li>
+                            <a href="{{ url_for('doctor_dashboard') }}"
+                               class="nav-item {% if active_page == 'doctor_overview' %}active{% endif %}">
+                                Overview
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{{ url_for('doctor_patients') }}"
+                               class="nav-item {% if active_page == 'doctor_patients' %}active{% endif %}">
+                                Patients
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{{ url_for('doctor_appointments') }}"
+                               class="nav-item {% if active_page == 'doctor_appointments' %}active{% endif %}">
+                                Appointments
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{{ url_for('doctor_notes') }}"
+                               class="nav-item {% if active_page == 'doctor_notes' %}active{% endif %}">
+                                Clinical Notes
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{{ url_for('doctor_records') }}"
+                               class="nav-item {% if active_page == 'doctor_records' %}active{% endif %}">
+                                Medical Records
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{{ url_for('doctor_messages') }}"
+                               class="nav-item {% if active_page == 'doctor_messages' %}active{% endif %}">
+                                Messages
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{{ url_for('doctor_analytics') }}"
+                               class="nav-item {% if active_page == 'doctor_analytics' %}active{% endif %}">
+                                Analytics
+                            </a>
+                        </li>
+
+                    {% elif session.get('user_role') == 'Patient' %}
+                        <li>
+                            <a href="{{ url_for('patient_dashboard') }}"
+                               class="nav-item {% if active_page == 'patient_overview' %}active{% endif %}">
+                                Health Overview
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{{ url_for('patient_appointments') }}"
+                               class="nav-item {% if active_page == 'patient_appointments' %}active{% endif %}">
+                                Appointments
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{{ url_for('patient_messages') }}"
+                               class="nav-item {% if active_page == 'patient_messages' %}active{% endif %}">
+                                Messages
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{{ url_for('patient_records') }}"
+                               class="nav-item {% if active_page == 'patient_records' %}active{% endif %}">
+                                My Records
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
+
+            <a href="{{ url_for('logout') }}" class="logout-link">Log Out</a>
+        </nav>
+
+        <div class="main-content">
+
+            <header class="topbar">
+                <div class="topbar-right">
+
+                    <div class="notif">
+                        <button type="button" class="notif-btn" id="notifToggle">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/>
+                                <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                            </svg>
+                            {% if notif_count and notif_count > 0 %}
+                                <span class="notif-badge">{{ notif_count }}</span>
+                            {% endif %}
+                        </button>
+
+                        <div class="notif-dropdown" id="notifDropdown">
+                            <div class="notif-head">Notifications</div>
+                            {% if notifications %}
+                                {% for n in notifications %}
+                                    <div class="notif-item">{{ n }}</div>
+                                {% endfor %}
+                            {% else %}
+                                <div class="notif-item notif-empty">No new notifications</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <span class="user-badge">Account ID: {{ user_name }}</span>
+                </div>
+            </header>
+
+            <main class="workspace">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        <div class="flash-messages">
+                            {% for category, message in messages %}
+                                <div class="flash {{ category }}">{{ message }}</div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                {% endwith %}
+
+                {% block content %}{% endblock %}
+            </main>
+
+        </div>
+    </div>
+
+    <script>
+        var notifToggle   = document.getElementById('notifToggle');
+        var notifDropdown = document.getElementById('notifDropdown');
+
+        if (notifToggle && notifDropdown) {
+            notifToggle.addEventListener('click', function(e) {
+                e.stopPropagation();
+                var isOpen = notifDropdown.classList.contains('open');
+                if (isOpen) {
+                    notifDropdown.classList.remove('open');
+                } else {
+                    notifDropdown.classList.add('open');
+                }
+            });
+
+            document.addEventListener('click', function() {
+                notifDropdown.classList.remove('open');
+            });
+
+            notifDropdown.addEventListener('click', function(e) {
+                e.stopPropagation();
+            });
+        }
+    </script>
+
+    {% block scripts %}{% endblock %}
+
+</body>
+</html>

@@ -1,0 +1,419 @@
+{% extends 'base.html' %}
+
+{% block title %}
+    {% if view == 'dashboard' or not view %}My Health
+    {% elif view == 'appointments' %}My Appointments
+    {% elif view == 'messages' %}Messages
+    {% elif view == 'records' %}My Records
+    {% else %}My Health
+    {% endif %}
+{% endblock %}
+
+{% block head %}
+    {% if view == 'appointments' %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/flatpickr.min.css') }}">
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+
+<!-- ============================================================
+     DASHBOARD VIEW
+     ============================================================ -->
+{% if view == 'dashboard' or not view %}
+
+<div class="welcome-banner">
+    <div class="welcome-text">
+        <span class="welcome-hi">Welcome back</span>
+        <h1>{{ user_name }}!</h1>
+        <p>Your health journey is looking great. All your medical data and upcoming
+           appointments are consolidated here for your convenience.</p>
+    </div>
+    <div class="welcome-art">
+        <svg width="150" height="120" viewBox="0 0 150 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="78" cy="60" r="52" fill="rgba(255,255,255,0.12)"/>
+            <circle cx="78" cy="60" r="34" fill="rgba(255,255,255,0.15)"/>
+            <path d="M40 60h16l8-22 14 44 9-30 6 8h17" stroke="#fff" stroke-width="4"
+                  stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+    </div>
+</div>
+
+{% if record %}
+<div class="vitals-grid">
+    <div class="vital-card">
+        <div class="vital-icon vi-red">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="#fff">
+                <path d="M12 2s7 7.5 7 12a7 7 0 1 1-14 0c0-4.5 7-12 7-12z"/>
+            </svg>
+        </div>
+        <div class="vital-body">
+            <span class="vital-label">Blood Pressure</span>
+            <div class="vital-value">{{ record.bp_sys }}/{{ record.bp_dia }}</div>
+            <span class="vital-status {{ 'bad' if record.bp_sys >= 140 else 'good' }}">
+                {{ 'High' if record.bp_sys >= 140 else 'Normal' }} &middot; mmHg
+            </span>
+        </div>
+    </div>
+    <div class="vital-card">
+        <div class="vital-icon vi-pink">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="#fff">
+                <path d="M12 21s-8-5-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 6-8 11-8 11z"/>
+            </svg>
+        </div>
+        <div class="vital-body">
+            <span class="vital-label">Pulse Rate</span>
+            <div class="vital-value">{{ record.heart_rate }} <small>bpm</small></div>
+            <span class="vital-status {{ 'bad' if record.heart_rate >= 100 else 'good' }}">
+                {{ 'High' if record.heart_rate >= 100 else 'Normal' }}
+            </span>
+        </div>
+    </div>
+    <div class="vital-card">
+        <div class="vital-icon vi-orange">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2">
+                <path d="M12 3v3M5 10a7 7 0 1 1 14 0c0 5-7 11-7 11S5 15 5 10z" stroke-linecap="round"/>
+            </svg>
+        </div>
+        <div class="vital-body">
+            <span class="vital-label">Glucose Level</span>
+            <div class="vital-value">{{ record.glucose }} <small>mg/dL</small></div>
+            <span class="vital-status {{ 'bad' if record.glucose >= 126 else 'good' }}">
+                {{ 'High' if record.glucose >= 126 else 'Normal' }}
+            </span>
+        </div>
+    </div>
+    <div class="vital-card">
+        <div class="vital-icon vi-blue">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2">
+                <path d="M12 3l7 3v6c0 5-3.5 7.5-7 9-3.5-1.5-7-4-7-9V6l7-3z" stroke-linejoin="round"/>
+            </svg>
+        </div>
+        <div class="vital-body">
+            <span class="vital-label">Cholesterol</span>
+            <div class="vital-value">{{ record.cholesterol }} <small>mg/dL</small></div>
+            <span class="vital-status {{ 'bad' if record.cholesterol >= 240 else 'good' }}">
+                {{ 'High' if record.cholesterol >= 240 else 'Normal' }}
+            </span>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="dash-grid">
+    <div class="grid-card">
+        <div class="card-header">
+            <h3>My Upcoming Appointments</h3>
+            <a href="{{ url_for('patient_appointments') }}" class="card-tag-link">Manage</a>
+        </div>
+        {% if appointments %}
+            {% for appt in appointments[:4] %}
+            <div class="mini-appt">
+                <div>
+                    <div class="mini-appt-doc">Dr. {{ appt[1] }}</div>
+                    <div class="mini-appt-info">{{ appt[4] }} &middot; {{ appt[2] }} at {{ appt[3] }}</div>
+                </div>
+                <span class="appt-pill pill-{{ appt[5]|lower }}">{{ appt[5] }}</span>
+            </div>
+            {% endfor %}
+        {% else %}
+            <p class="muted-line">No appointments yet. Book one from the Appointments page.</p>
+        {% endif %}
+    </div>
+    <div class="grid-card">
+        <div class="card-header"><h3>Health Tips</h3></div>
+        <div class="tip-box tip-accent">
+            <div class="tip-title">Stay Active</div>
+            <p>30 minutes of daily walking helps control blood sugar and blood pressure.</p>
+        </div>
+        <div class="tip-box tip-warning">
+            <div class="tip-title">Watch Your Diet</div>
+            <p>Reduce salt and sugar intake to lower your cardiovascular risk.</p>
+        </div>
+        <div class="tip-box tip-success">
+            <div class="tip-title">Regular Checkups</div>
+            <p>Book a checkup with your doctor every few months to stay on track.</p>
+        </div>
+    </div>
+</div>
+
+
+<!-- ============================================================
+     APPOINTMENTS VIEW
+     ============================================================ -->
+{% elif view == 'appointments' %}
+
+<div class="page-header">
+    <h1>Appointments</h1>
+    <p>Book a new appointment with a doctor and track your existing ones.</p>
+</div>
+
+<div class="appt-layout">
+
+    <section class="appt-form-card">
+        <div class="appt-form-head">
+            <span class="appt-form-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"
+                     stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="4" width="18" height="18" rx="3"/>
+                    <path d="M16 2v4M8 2v4M3 10h18"/>
+                </svg>
+            </span>
+            <h3>Book New Appointment</h3>
+        </div>
+        <form method="POST" action="{{ url_for('patient_appointments') }}" autocomplete="off">
+            <div class="form-group">
+                <label for="doctor">Select Doctor</label>
+                <select id="doctor" name="doctor" required>
+                    <option value="" disabled selected>Choose a doctor by speciality</option>
+                    {% for doc in doctors %}
+                        <option value="{{ doc.username }}">
+                            Dr. {{ doc.username }} — {{ doc.speciality }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="date">Date</label>
+                    <input type="text" id="date" name="date" placeholder="Select date" required>
+                </div>
+                <div class="form-group">
+                    <label>Time</label>
+                    <div style="display:flex; align-items:center; gap:6px;">
+                        <input type="time" id="time-picker" required autocomplete="off"
+                               style="flex:1;">
+                        <select id="time-ampm"
+                                style="width:70px; text-align:center; font-size:0.95rem; font-weight:500; cursor:pointer;">
+                            <option value="AM">AM</option>
+                            <option value="PM">PM</option>
+                        </select>
+                    </div>
+                    <input type="hidden" id="time" name="time">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="reason">Reason for Visit</label>
+                <input type="text" id="reason" name="reason"
+                       placeholder="e.g. General checkup" required>
+            </div>
+            <button type="submit" class="submit-btn">+ Book Appointment</button>
+        </form>
+    </section>
+
+    <section class="appt-list">
+        <h3 class="appt-list-title">My Appointments ({{ appointments|length }})</h3>
+        {% if appointments %}
+            {% for appt in appointments %}
+            <div class="appt-card status-{{ appt[5]|lower }}">
+                <div class="appt-avatar">{{ appt[1][0]|upper }}</div>
+                <div class="appt-card-main">
+                    <div class="appt-doctor">Dr. {{ appt[1] }}</div>
+                    <div class="appt-reason">{{ appt[4] }}</div>
+                    <div class="appt-datetime">
+                        <span class="appt-meta">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="4" width="18" height="18" rx="2"/>
+                                <path d="M16 2v4M8 2v4M3 10h18"/>
+                            </svg>
+                            {{ appt[2] }}
+                        </span>
+                        <span class="appt-meta">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="9"/>
+                                <path d="M12 7v5l3 2"/>
+                            </svg>
+                            {{ appt[3] }}
+                        </span>
+                    </div>
+                </div>
+                <div class="appt-card-side">
+                    <span class="appt-pill pill-{{ appt[5]|lower }}">{{ appt[5] }}</span>
+                    {% if appt[5] == 'Booked' %}
+                        <a href="{{ url_for('cancel_appointment', appt_id=appt[0]) }}"
+                           class="appt-cancel"
+                           onclick="return confirm('Cancel this appointment?')">Cancel</a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="appt-empty">
+                <p>You have no appointments yet.</p>
+                <span>Book one using the form on the left.</span>
+            </div>
+        {% endif %}
+    </section>
+
+</div>
+
+<script>
+document.querySelector('form').addEventListener('submit', function (e) {
+    const timeVal = document.getElementById('time-picker').value;
+    const ampm    = document.getElementById('time-ampm').value;
+    if (!timeVal) {
+        e.preventDefault();
+        alert('Please select a time.');
+        return;
+    }
+    let [h, m] = timeVal.split(':');
+    h = parseInt(h);
+    if (h === 0) h = 12;
+    else if (h > 12) h = h - 12;
+    document.getElementById('time').value = String(h).padStart(2,'0') + ':' + m + ' ' + ampm;
+});
+</script>
+
+<!-- ============================================================
+     MESSAGES VIEW
+     ============================================================ -->
+{% elif view == 'messages' %}
+
+<div class="page-header">
+    <h1>Messages</h1>
+    <p>Select a doctor to send a query and view their replies.</p>
+</div>
+
+{% if not selected %}
+
+<div class="grid-card">
+    <div class="card-header">
+        <h3>Select Doctor</h3>
+        <span class="card-tag">{{ doctors|length }} available</span>
+    </div>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Doctor</th>
+                <th>Speciality</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for doc in doctors %}
+            <tr class="clickable-row"
+                data-href="{{ url_for('patient_messages', doctor=doc.username) }}">
+                <td><strong style="color: var(--text-primary);">Dr. {{ doc.username }}</strong></td>
+                <td style="color: var(--text-secondary);">{{ doc.speciality }}</td>
+                <td style="text-align:right; color: var(--text-secondary);">Open Chat ›</td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="3" style="text-align:center; color: var(--text-secondary); padding:20px;">
+                    No doctors available yet.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% else %}
+
+<div style="margin-bottom:16px;">
+    <a href="{{ url_for('patient_messages') }}" class="back-link">← Back to doctors</a>
+</div>
+
+<div class="grid-card chat-card">
+    <div class="card-header"><h3>Chat with Dr. {{ selected }}</h3></div>
+    <div class="chat-window">
+        {% if chat %}
+            {% for msg in chat %}
+            <div class="chat-row {% if msg.sender == 'Patient' %}me{% else %}them{% endif %}">
+                <div class="chat-bubble">
+                    <span class="chat-sender">{{ msg.sender }}</span>
+                    <p>{{ msg.message }}</p>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <p class="muted-line">No messages yet. Send your first query below.</p>
+        {% endif %}
+    </div>
+    <form method="POST" action="{{ url_for('patient_messages') }}" class="chat-input">
+        <input type="hidden" name="doctor" value="{{ selected }}">
+        <input type="text" name="message" placeholder="Type your message..." required>
+        <button type="submit" class="submit-btn">Send</button>
+    </form>
+</div>
+
+{% endif %}
+
+
+<!-- ============================================================
+     MY RECORDS VIEW
+     ============================================================ -->
+{% elif view == 'records' %}
+
+<div class="page-header">
+    <h1>My Medical Records</h1>
+    <p>View the documents your doctor has shared with you.</p>
+</div>
+
+<div class="table-container">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Document Type</th>
+                <th>File</th>
+                <th>Uploaded By</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% if records %}
+                {% for r in records %}
+                <tr>
+                    <td><span class="appt-pill pill-booked">{{ r.document_type }}</span></td>
+                    <td>
+                        <a href="{{ url_for('download_file', filename=r.file_name) }}"
+                           target="_blank" class="file-link">{{ r.file_name }}</a>
+                    </td>
+                    <td>{{ r.uploaded_by }}</td>
+                </tr>
+                {% endfor %}
+            {% else %}
+                <tr>
+                    <td colspan="3" style="text-align:center; padding:30px;">
+                        No medical records yet.
+                    </td>
+                </tr>
+            {% endif %}
+        </tbody>
+    </table>
+</div>
+
+{% endif %}
+<!-- end of view blocks -->
+
+{% endblock %}
+
+{% block scripts %}
+{% if view == 'appointments' %}
+<script src="{{ url_for('static', filename='js/flatpickr.min.js') }}"></script>
+<script>
+    flatpickr("#date", {
+        dateFormat: "Y-m-d",
+        minDate: "today",
+        disableMobile: true
+    });
+    flatpickr("#time", {
+        enableTime: true,
+        noCalendar: true,
+        dateFormat: "H:i",
+        time_24hr: true,
+        disableMobile: true
+    });
+</script>
+{% endif %}
+{% if view == 'messages' %}
+<script>
+    document.querySelectorAll('tr[data-href]').forEach(function(row) {
+        row.addEventListener('click', function() {
+            window.location = row.getAttribute('data-href');
+        });
+    });
+</script>
+{% endif %}
+{% endblock %}
